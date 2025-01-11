@@ -1,2 +1,285 @@
- MERGE (c:Customer {CustomerID: '7590-VHVEG', Gender: 'Female', SeniorCitizen: 0, Partner: 'Yes', Dependents: 'No', Tenure: 1, Churn: 'No'})
- MERGE (p:PhoneService {PhoneService: $PhoneService, MultipleLines: $MultipleLines})
+Schema - 
+
+MERGE (c:Customer {CustomerID: '7590-VHVEG', Gender: 'Female', SeniorCitizen: 0, Partner: 'Yes', Dependents: 'No', Tenure: 1, Churn: 'No'})
+MERGE (p:PhoneService {PhoneService: 'No', MultipleLines: 'No phone service'})
+MERGE (c)-[:HAS_PHONE_SERVICE]->(p)
+MERGE (p:PhoneService {PhoneService: 'Yes', MultipleLines: 'No'})
+
+MATCH (c:Customer {CustomerID: '5575-GNVDE'})
+MERGE (i:InternetService {InternetService: 'DSL', OnlineSecurity: 'Yes', OnlineBackup: 'No', 
+                        DeviceProtection: 'Yes', TechSupport: 'No'})
+WITH c, i
+WHERE i.InternetService <> 'No'
+MERGE (c)-[:HAS_INTERNET_SERVICE]->(i)
+
+MATCH (c:Customer {CustomerID: '9305-CDSKC'})
+MERGE (st:StreamingTV {StreamingTV: 'Yes'})
+WITH c, st
+WHERE st.StreamingTV = 'Yes'
+MERGE (c)-[:HAS_STREAMING_TV]->(st)
+
+MATCH (c:Customer {CustomerID: '9305-CDSKC'})
+MERGE (sm:StreamingMovies {StreamingMovies: 'Yes'})
+WITH c, sm
+WHERE sm.StreamingMovies = 'Yes'
+MERGE (c)-[:HAS_STREAMING_MOVIES]->(sm)
+
+MATCH (c:Customer {CustomerID: '9305-CDSKC'})
+MERGE (ct:Contract {Contract: 'Month-to-month'})
+MERGE (c)-[:HAS_CONTRACT]->(ct)
+
+
+MATCH (c:Customer {CustomerID: '9305-CDSKC'})
+MERGE (b:Billing {PaperlessBilling: 'Yes', PaymentMethod: 'Electronic check'})
+MERGE (c)-[:HAS_BILLING]->(b)
+
+MATCH (c:Customer {CustomerID: '9305-CDSKC'})
+MERGE (ch:Charges {MonthlyCharges: '99.65', TotalCharges: '820.5'})
+MERGE (c)-[:HAS_CHARGES]->(ch)
+
+Queries - 
+
+Certainly, based on the provided Cypher queries and the assumption that this is a simplified representation of a Telecom Churn dataset, here are some sample queries to gain deeper insights into churn details:
+
+**1. Identify Churn Patterns:**
+
+* **Churn Rate by Contract Type:**
+    ```cypher
+    MATCH (c:Customer)-[:HAS_CONTRACT]->(ct:Contract)
+    RETURN ct.Contract, COUNT(c) AS TotalCustomers, 
+           SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+           ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+    ORDER BY ChurnRate DESC;
+    ```
+    This query will identify the contract types with the highest churn rates.
+
+* **Churn Rate by Internet Service:**
+    ```cypher
+    MATCH (c:Customer)-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+    RETURN i.InternetService, COUNT(c) AS TotalCustomers, 
+           SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+           ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+    ORDER BY ChurnRate DESC;
+    ```
+    This query will identify the internet service types with the highest churn rates.
+
+* **Churn Rate by Payment Method:**
+    ```cypher
+    MATCH (c:Customer)-[:HAS_BILLING]->(b:Billing)
+    RETURN b.PaymentMethod, COUNT(c) AS TotalCustomers, 
+           SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+           ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+    ORDER BY ChurnRate DESC;
+    ```
+    This query will identify the payment methods associated with higher churn rates.
+
+**2. Analyze Customer Behavior:**
+
+* **Top Services Used by Churning Customers:**
+    ```cypher
+    MATCH (c:Customer {Churn: 'Yes'})-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+    RETURN i.InternetService, COUNT(c) AS ChurningCustomers
+    ORDER BY ChurningCustomers DESC;
+    ```
+    This query will identify the internet services most commonly used by churning customers.
+
+* **Relationship between Tenure and Churn:**
+    ```cypher
+    MATCH (c:Customer)
+    RETURN c.Tenure, SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount
+    ORDER BY c.Tenure;
+    ```
+    This query will help analyze the relationship between customer tenure and churn probability.
+
+**3. Investigate Potential Churn Drivers:**
+
+* **Impact of Monthly Charges on Churn:**
+    ```cypher
+    MATCH (c:Customer)-[:HAS_CHARGES]->(ch:Charges)
+    RETURN ch.MonthlyCharges, SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount
+    ORDER BY ch.MonthlyCharges;
+    ```
+    This query will explore the correlation between monthly charges and churn likelihood.
+
+* **Churn Prediction (Simplified):**
+    ```cypher
+    MATCH (c:Customer)
+    WITH c, 
+         CASE 
+             WHEN c.Contract = 'Month-to-month' THEN 1 
+             ELSE 0 
+         END AS Contract_MonthToMonth,
+         CASE 
+             WHEN c.InternetService = 'Fiber optic' THEN 1 
+             ELSE 0 
+         END AS InternetService_FiberOptic,
+         c.MonthlyCharges
+    RETURN c.CustomerID, 
+           Contract_MonthToMonth, 
+           InternetService_FiberOptic, 
+           c.MonthlyCharges, 
+           CASE 
+               WHEN c.Churn = 'Yes' THEN 1 
+               ELSE 0 
+           END AS Churn 
+    ORDER BY c.CustomerID; 
+    ```
+    This query creates a simplified feature set for potential churn prediction modeling.
+
+**Note:** These are just a few examples. You can further refine these queries and explore other relationships within the data to gain deeper insights into churn behavior and identify key factors contributing to customer churn.
+
+Remember to adapt these queries to the specific needs and complexity of your actual Telecom Churn dataset.
+
+**1. Churn Rate by Contract Type**
+
+```cypher
+MATCH (c:Customer)-[:HAS_CONTRACT]->(ct:Contract)
+WHERE c.Churn = 'Yes'
+RETURN ct.Contract, count(*) AS ChurnCount
+ORDER BY ChurnCount DESC
+```
+
+**2. Churn Rate by Internet Service**
+
+```cypher
+MATCH (c:Customer)-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+WHERE c.Churn = 'Yes'
+RETURN i.InternetService, count(*) AS ChurnCount
+ORDER BY ChurnCount DESC
+```
+
+**3. Customers with Highest Monthly Charges**
+
+```cypher
+MATCH (c:Customer)-[:HAS_CHARGES]->(ch:Charges)
+RETURN c.CustomerID, ch.MonthlyCharges
+ORDER BY ch.MonthlyCharges DESC
+LIMIT 10
+```
+
+**4. Customers with Multiple Lines and Churn**
+
+```cypher
+MATCH (c:Customer)-[:HAS_PHONE_SERVICE]->(p:PhoneService)
+WHERE c.Churn = 'Yes' AND p.MultipleLines = 'Yes'
+RETURN c.CustomerID
+```
+
+**5. Customers with Fiber Optic and No Tech Support**
+
+```cypher
+MATCH (c:Customer)-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+WHERE i.InternetService = 'Fiber optic' AND i.TechSupport = 'No'
+RETURN c.CustomerID
+```
+
+**6. Customers with Streaming Services and Churn**
+
+```cypher
+MATCH (c:Customer)-[:HAS_STREAMING_TV]->(st:StreamingTV),
+      (c:Customer)-[:HAS_STREAMING_MOVIES]->(sm:StreamingMovies)
+WHERE c.Churn = 'Yes'
+RETURN c.CustomerID
+```
+
+**7. Customers with Electronic Checks and Churn**
+
+```cypher
+MATCH (c:Customer)-[:HAS_BILLING]->(b:Billing)
+WHERE c.Churn = 'Yes' AND b.PaymentMethod = 'Electronic check'
+RETURN c.CustomerID
+```
+
+**8. Average Tenure of Churned Customers**
+
+```cypher
+MATCH (c:Customer)
+WHERE c.Churn = 'Yes'
+RETURN avg(c.Tenure) AS AvgTenureOfChurnedCustomers
+```
+
+**9. Customers with High Tenure and Churn**
+
+```cypher
+MATCH (c:Customer)
+WHERE c.Churn = 'Yes' AND c.Tenure > 60
+RETURN c.CustomerID
+```
+
+**10. Customers with No Online Security and Churn**
+
+```cypher
+MATCH (c:Customer)-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+WHERE c.Churn = 'Yes' AND i.OnlineSecurity = 'No'
+RETURN c.CustomerID
+```
+
+**Note:** These are just a few examples. You can create many more complex and insightful queries based on your specific analysis needs. 
+
+Remember to adapt these queries to your specific data and analysis goals. You can use these queries as a starting point for further exploration and analysis of your Telecom Churn data in Neo4j.
+
+You're absolutely right! My apologies, I seem to have gotten carried away with prediction queries. 
+
+Here are some more complex Cypher queries focused on analysis of churn relationships, keeping the "no prediction" requirement in mind:
+
+**1. Service Bundling Impact on Churn:**
+
+```cypher
+MATCH (c:Customer)
+OPTIONAL MATCH (c)-[:HAS_INTERNET_SERVICE]->(i:InternetService)
+OPTIONAL MATCH (c)-[:HAS_STREAMING_TV]->(st:StreamingTV)
+OPTIONAL MATCH (c)-[:HAS_STREAMING_MOVIES]->(sm:StreamingMovies)
+WITH c, 
+     CASE 
+         WHEN i IS NOT NULL AND st IS NOT NULL AND sm IS NOT NULL THEN 'Triple Play' 
+         WHEN i IS NOT NULL AND (st IS NOT NULL OR sm IS NOT NULL) THEN 'Double Play' 
+         WHEN i IS NOT NULL THEN 'Internet Only' 
+         ELSE 'No Internet' 
+     END AS ServiceBundle
+RETURN 
+    ServiceBundle, 
+    COUNT(c) AS TotalCustomers, 
+    SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+    ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+ORDER BY ChurnRate DESC
+```
+
+* **Explanation:** This query analyzes churn rates across different service bundles (Triple Play, Double Play, Internet Only, No Internet), providing insights into which bundle combinations might be more prone to churn.
+
+**2. Analyzing Churn by Tenure Groups:**
+
+```cypher
+MATCH (c:Customer)
+WITH c, CASE 
+         WHEN c.Tenure <= 12 THEN '0-12 Months' 
+         WHEN c.Tenure > 12 AND c.Tenure <= 24 THEN '13-24 Months' 
+         WHEN c.Tenure > 24 AND c.Tenure <= 36 THEN '25-36 Months' 
+         ELSE '36+ Months' 
+     END AS TenureGroup
+RETURN 
+    TenureGroup, 
+    COUNT(c) AS TotalCustomers, 
+    SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+    ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+ORDER BY TenureGroup
+```
+
+* **Explanation:** This query groups customers by tenure ranges (e.g., 0-12 months, 13-24 months) and calculates churn rates within each group, helping to identify potential patterns of churn across different customer lifecycles.
+
+**3. Impact of Multiple Lines on Churn (for Phone Service):**
+
+```cypher
+MATCH (c:Customer)-[:HAS_PHONE_SERVICE]->(p:PhoneService)
+WITH c, p.MultipleLines
+RETURN 
+    p.MultipleLines, 
+    COUNT(c) AS TotalCustomers, 
+    SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END) AS ChurnCount,
+    ROUND(toFloat(SUM(CASE WHEN c.Churn = 'Yes' THEN 1 ELSE 0 END))/COUNT(c), 2) AS ChurnRate
+```
+
+* **Explanation:** This query analyzes the relationship between having multiple phone lines and churn rates, providing insights into whether customers with multiple lines are more or less likely to churn.
+
+These queries focus on analyzing relationships and patterns within the data without attempting to predict future churn. They can help you understand the factors that are most strongly associated with churn in your dataset.
+
+I hope these revised queries are more helpful for your analysis needs!
