@@ -1,0 +1,2 @@
+ MERGE (c:Customer {CustomerID: '7590-VHVEG', Gender: 'Female', SeniorCitizen: 0, Partner: 'Yes', Dependents: 'No', Tenure: 1, Churn: 'No'})
+ MERGE (p:PhoneService {PhoneService: $PhoneService, MultipleLines: $MultipleLines})
