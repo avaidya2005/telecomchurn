@@ -21,7 +21,7 @@ def execute_batch_queries(batch_queries):
                 tx.run(q['query'], q['parameters'])
 
 # Read the CSV file into a DataFrame
-csv_file_path = 'datafile/orig/telcochurn.csv'  # Update with your actual file path
+csv_file_path = 'datafile/orig/smallerset.csv'  # Update with your actual file path
 df = pd.read_csv(csv_file_path)
 
 # Replace NaN values with a default value (e.g., empty string)

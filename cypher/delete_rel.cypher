@@ -1,0 +1,39 @@
+MATCH ()-[r:HAS_PHONE_SERVICE]->()
+DELETE r;
+
+MATCH ()-[r:HAS_INTERNET_SERVICE]->()
+DELETE r;
+
+MATCH ()-[r:HAS_STREAMING_TV]->()
+DELETE r;
+
+MATCH ()-[r:HAS_STREAMING_MOVIES]->()
+DELETE r;
+MATCH ()-[r:HAS_CONTRACT]->()
+DELETE r;
+MATCH ()-[r:HAS_BILLING]->()
+DELETE r;
+MATCH ()-[r:HAS_CHARGES]->()
+DELETE r;
+
+MATCH (c:PhoneService)
+DETACH DELETE c;
+MATCH (c:InternetService)
+DETACH DELETE c;
+MATCH (c:StreamingTV)
+DETACH DELETE c;
+
+MATCH (c:StreamingMovies)
+DETACH DELETE c;
+
+MATCH (c:Contract)
+DETACH DELETE c;
+
+MATCH (c:Billing)
+DETACH DELETE c;
+
+MATCH (c:Charges)
+DETACH DELETE c;
+
+MATCH (c:Customer)
+DETACH DELETE c;
